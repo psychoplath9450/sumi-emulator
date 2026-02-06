@@ -5,8 +5,8 @@
 <h1 align="center">SumiBoy</h1>
 <p align="center"><strong>E-Ink Game Boy for the Xteink X4</strong></p>
 <p align="center">
-  <a href="https://YOUR_USERNAME.github.io/sumiboy/">⚡ Flash Now</a> · 
-  <a href="https://github.com/YOUR_USERNAME/sumiboy/releases">Releases</a>
+  <a href="https://psychoplath9450.github.io/sumi-emulator/">⚡ Flash Now</a> · 
+  <a href="https://github.com/psychoplath9450/sumi-emulator/releases">Releases</a>
 </p>
 
 ---
@@ -15,7 +15,7 @@ Play **Pokémon Red** on your SUMI's 4.26" e-ink display. Full Game Boy CPU emul
 
 No build tools needed — flash directly from your browser in 60 seconds.
 
-## → [Flash Now](https://YOUR_USERNAME.github.io/sumiboy/)
+## → [Flash Now](https://psychoplath9450.github.io/sumi-emulator/)
 
 Open in **Chrome** or **Edge**, plug in your SUMI via USB-C, click the button. That's it.
 
