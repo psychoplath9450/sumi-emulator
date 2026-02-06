@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SumiBoy Flasher</title>
+    <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+    <script type="module" src="https://unpkg.com/esptool-js@0.4.5/bundle.js"></script>
+    <style>
+        :root {
+            --white: #ffffff;
+            --black: #1a1a1a;
+            --gray: #dddddd;
+            --gray-dark: #888888;
+            --gray-light: #f2f0ed;
+            --red: #c8352c;
+            --red-light: #e8443a;
+            --red-dark: #a02a22;
+            --blue: #3366cc;
+            --desktop: #f5f3f0;
+            --success: #2d8a3e;
+            --error: #cc3333;
+            --warning: #b8860b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Geneva', 'Helvetica Neue', Helvetica, sans-serif;
+            font-size: 13px;
+            background: var(--desktop);
+            min-height: 100vh;
+            color: var(--black);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-top: 20px;
+        }
+        .header canvas { display: block; margin: 0 auto 16px; }
+        .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+        .header h1 span { color: var(--red); }
+        .header .tagline { font-size: 11px; color: var(--gray-dark); letter-spacing: 2px; text-transform: uppercase; }
+
+        .window {
+            max-width: 520px; margin: 0 auto 20px;
+            background: var(--white); border: 1px solid #c0c0c0; border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .title-bar {
+            background: linear-gradient(180deg, #fafafa, #e8e8e8);
+            border-bottom: 1px solid #c0c0c0; padding: 8px 14px;
+            display: flex; align-items: center; gap: 8px; border-radius: 10px 10px 0 0;
+        }
+        .window-dots { display: flex; gap: 6px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.12); }
+        .dot-red { background: #ff5f57; } .dot-yellow { background: #febc2e; } .dot-green { background: #28c840; }
+        .title-bar h2 { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #444; }
+        .title-bar .spacer { width: 54px; }
+        .window-body { padding: 16px; }
+
+        .panel { border: 1px solid var(--gray); border-radius: 6px; margin-bottom: 14px; overflow: hidden; }
+        .panel-header {
+            background: linear-gradient(180deg, #fafafa, #f0f0f0);
+            border-bottom: 1px solid var(--gray); padding: 8px 12px;
+            font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 8px;
+        }
+        .step-num {
+            background: var(--red); color: white; width: 20px; height: 20px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+        }
+        .panel-body { padding: 14px; }
+        .instructions { font-size: 12px; margin-bottom: 12px; color: #555; }
+        .instructions ol { margin-left: 20px; }
+        .instructions li { margin-bottom: 4px; }
+        .version-box {
+            text-align: center; padding: 12px; background: var(--gray-light);
+            border: 1px solid var(--gray); border-radius: 4px; margin-bottom: 12px;
+        }
+        .version-box .ver { font-weight: 700; color: var(--red); font-size: 16px; }
+        .version-box .size { color: var(--gray-dark); font-size: 10px; margin-top: 2px; }
+
+        esp-web-install-button { display: block; margin: 12px 0; }
+        esp-web-install-button::part(button) {
+            background: linear-gradient(180deg, var(--red-light), var(--red));
+            border: 1px solid var(--red-dark); border-radius: 6px;
+            padding: 12px 20px; font-family: inherit; font-size: 13px; font-weight: 600;
+            color: white; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            width: 100%; transition: all 0.15s;
+        }
+        esp-web-install-button::part(button):hover {
+            background: linear-gradient(180deg, #ee4e44, var(--red-light));
+            box-shadow: 0 2px 8px rgba(200,53,44,0.3);
+        }
+
+        .warning-box {
+            background: #fef9e7; border: 1px solid #e6c84e; border-radius: 4px;
+            padding: 10px 12px; margin-bottom: 10px; font-size: 11px; line-height: 1.5;
+        }
+        .warning-box strong { color: var(--warning); }
+
+        .drop-zone {
+            border: 2px dashed #ccc; border-radius: 8px; padding: 24px;
+            text-align: center; margin-bottom: 12px; transition: all 0.2s; cursor: pointer;
+        }
+        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--blue); background: #f0f4ff; }
+        .drop-zone.has-file { border-color: var(--success); background: #f0faf2; }
+        .drop-zone-text { font-size: 11px; color: var(--gray-dark); }
+        .drop-zone-file { font-size: 12px; color: var(--success); font-weight: 600; margin-top: 6px; }
+        .drop-zone input[type="file"] { display: none; }
+        .hidden { display: none !important; }
+
+        .btn {
+            background: linear-gradient(180deg, var(--white), #eee); border: 1px solid #bbb; border-radius: 6px;
+            padding: 10px 16px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-primary { background: linear-gradient(180deg, var(--red-light), var(--red)); color: white; border-color: var(--red-dark); }
+        .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ee4e44, var(--red-light)); }
+
+        .progress-container { margin-top: 12px; display: none; }
+        .progress-container.active { display: block; }
+        .progress { height: 18px; border: 1px solid #ccc; border-radius: 9px; background: var(--white); overflow: hidden; padding: 2px; margin-bottom: 6px; }
+        .progress-fill { height: 100%; border-radius: 7px; width: 0%; transition: width 0.3s; background: linear-gradient(90deg, var(--red), var(--red-light)); }
+        .progress-text { font-size: 10px; color: var(--gray-dark); text-align: center; }
+        .status-line { font-size: 11px; color: var(--gray-dark); margin-top: 8px; text-align: center; }
+        .status-line.success { color: var(--success); font-weight: 600; }
+        .status-line.error { color: var(--error); }
+
+        .browser-warning { background: #fff0f0; border: 1px solid var(--error); border-radius: 6px; padding: 12px; text-align: center; margin-bottom: 14px; }
+        .browser-warning h3 { color: var(--error); font-size: 12px; margin-bottom: 4px; }
+
+        .features-bar { max-width: 520px; margin: 0 auto 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .feat-card { background: var(--white); border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px 10px; text-align: center; }
+        .feat-card .icon { font-size: 18px; margin-bottom: 4px; }
+        .feat-card .label { font-size: 10px; font-weight: 600; color: #555; letter-spacing: 0.5px; }
+
+        .controls-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 11px; }
+        .ctrl-key { color: var(--red); font-weight: 600; }
+        .ctrl-val { color: #666; }
+
+        footer { max-width: 520px; margin: 0 auto; text-align: center; padding: 16px; font-size: 10px; color: var(--gray-dark); }
+        footer a { color: var(--blue); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 540px) { body { padding: 12px; } .features-bar { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <canvas id="pokeball" width="240" height="240"></canvas>
+        <h1>Sumi<span>Boy</span></h1>
+        <div class="tagline">E-Ink Game Boy for the Xteink X4</div>
+    </div>
+
+    <div class="window">
+        <div class="title-bar">
+            <div class="window-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+            <h2>SumiBoy Flasher</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="window-body">
+            <div id="browserWarning" class="browser-warning hidden">
+                <h3>⚠️ Unsupported Browser</h3>
+                <p>Web Serial requires <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong>.</p>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="step-num">1</span> Flash SumiBoy</div>
+                <div class="panel-body">
+                    <div class="instructions"><ol>
+                        <li>Connect your SUMI via USB-C</li>
+                        <li>Click <strong>Install</strong> below</li>
+                        <li>Select the USB serial port when prompted</li>
+                    </ol></div>
+                    <div class="version-box">
+                        <div class="ver">SumiBoy v2.5.0</div>
+                        <div class="size">Pokémon Red · ESP32-C3 · 4.26" e-ink</div>
+                    </div>
+                    <esp-web-install-button manifest="manifest.json">
+                        <button slot="activate">⚡ Install SumiBoy v2.5.0</button>
+                        <span slot="unsupported">Your browser doesn't support Web Serial</span>
+                        <span slot="not-allowed">Not allowed to use Web Serial</span>
+                    </esp-web-install-button>
+                    <div class="warning-box">
+                        <strong>⚠️ Note:</strong> This replaces your current firmware entirely. To go back to stock SUMI, re-flash the original SUMI firmware.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="step-num">2</span> Custom Firmware (Optional)</div>
+                <div class="panel-body">
+                    <div id="dropZone" class="drop-zone">
+                        <div class="drop-zone-text">Drag & drop a .bin file here<br>or click to browse</div>
+                        <div id="dropZoneFile" class="drop-zone-file hidden"></div>
+                        <input type="file" id="fileInput" accept=".bin">
+                    </div>
+                    <button id="flashCustomBtn" class="btn btn-primary" disabled>⚡ Flash Custom Firmware</button>
+                    <div id="customProgress" class="progress-container">
+                        <div class="progress"><div id="customProgressFill" class="progress-fill"></div></div>
+                        <div id="customProgressText" class="progress-text">Connecting...</div>
+                    </div>
+                    <div id="customStatus" class="status-line"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-bar">
+        <div class="feat-card"><div class="icon">🎮</div><div class="label">Full GB CPU</div></div>
+        <div class="feat-card"><div class="icon">💾</div><div class="label">Save States</div></div>
+        <div class="feat-card"><div class="icon">😴</div><div class="label">Deep Sleep</div></div>
+    </div>
+
+    <div class="window" style="margin-bottom: 20px;">
+        <div class="title-bar">
+            <div class="window-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+            <h2>Controls</h2>
+            <div class="spacer"></div>
+        </div>
+        <div class="window-body">
+            <div class="controls-grid">
+                <span class="ctrl-key">D-Pad</span><span class="ctrl-val">Movement</span>
+                <span class="ctrl-key">A (Confirm)</span><span class="ctrl-val">Select / interact</span>
+                <span class="ctrl-key">B (Back)</span><span class="ctrl-val">Cancel / run</span>
+                <span class="ctrl-key">PWR tap</span><span class="ctrl-val">Full screen refresh</span>
+                <span class="ctrl-key">PWR hold ~2s</span><span class="ctrl-val">Save + open in-game menu</span>
+                <span class="ctrl-key">PWR hold ~3s</span><span class="ctrl-val">Save + deep sleep</span>
+                <span class="ctrl-key">PWR (asleep)</span><span class="ctrl-val">Wake up</span>
+            </div>
+        </div>
+    </div>
+
+    <footer>SumiBoy · A SUMI Community Project</footer>
+
+    <script>
+    (function(){
+        const c = document.getElementById('pokeball');
+        const ctx = c.getContext('2d');
+        const W=240, H=240, cx=W/2, cy=H/2, R=90;
+
+        function rng(seed){let s=seed;return function(){s=(s*16807)%2147483647;return(s-1)/2147483646;};}
+
+        // Splatter shading — top half
+        const rs0=rng(77);
+        let placed=0;
+        while(placed<300){
+            const a=rs0()*Math.PI;
+            const dist=Math.sqrt(rs0())*(R-8);
+            const px=cx+Math.cos(a+Math.PI)*dist;
+            const py=cy-Math.sin(a)*dist;
+            const dx=px-cx,dy=py-cy;
+            if(Math.sqrt(dx*dx+dy*dy)<17)continue;
+            if(py>=cy-2)continue;
+            const sz=rs0()<0.85?(0.3+rs0()*0.5):(0.6+rs0()*0.8);
+            ctx.fillStyle=`rgba(80,80,80,${0.3+rs0()*0.5})`;
+            ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fill();
+            placed++;
+        }
+
+        // Mist
+        ctx.fillStyle='#1a1a1a';
+        const rm=rng(100);
+        for(let i=0;i<200;i++){
+            const a=rm()*Math.PI*2, d=R+4+Math.pow(rm(),.5)*35, sz=.3+rm();
+            const py=cy+Math.sin(a)*d;
+            if(Math.abs(py-cy)<5) continue;
+            ctx.fillStyle=`rgba(80,80,80,${.1+rm()*.25})`;
+            ctx.beginPath();ctx.arc(cx+Math.cos(a)*d,py,sz,0,Math.PI*2);ctx.fill();
+        }
+
+        // Brushstroke circle
+        ctx.fillStyle='#1a1a1a';
+        const rb=rng(201), startA=-.5, gap=.55, endA=startA+Math.PI*2-gap, maxT=7;
+        for(let a=startA;a<endA;a+=.005){
+            const p=(a-startA)/(endA-startA);
+            const r=R+Math.sin(a*2.3+201)*2.5+Math.cos(a*5.1+201)*2+rb()*1.2;
+            let t;if(p<.06)t=maxT*(p/.06)*.5;else if(p>.88)t=maxT*((1-p)/.12);else t=maxT+Math.sin(a*1.3+201)*1.2;
+            if(t<.3)t=.3;
+            const bx=cx+Math.cos(a)*r,by=cy+Math.sin(a)*r;
+            ctx.beginPath();ctx.arc(bx,by,t/2,0,Math.PI*2);ctx.fill();
+            if(t>2&&rb()>.82){const ea=a+Math.PI/2+(rb()-.5)*.5,ed=t/2+rb()*1.5;ctx.beginPath();ctx.arc(bx+Math.cos(ea)*ed,by+Math.sin(ea)*ed,.2+rb()*.7,0,Math.PI*2);ctx.fill();}
+        }
+
+        // Center slash
+        const rs=rng(202);
+        for(let x=cx-R*.9;x<cx+R*.9;x++){
+            const p=(x-(cx-R*.9))/(R*1.8);let t=3.5;
+            if(p<.04)t*=p/.04;if(p>.96)t*=(1-p)/.04;
+            t+=Math.sin(x*.06+202)*.7;const yo=Math.sin(x*.012+202);
+            if(t>.3)ctx.fillRect(x,cy+yo-t/2,1,Math.max(1,Math.round(t)));
+        }
+
+        // Center button
+        ctx.fillStyle='#f5f3f0';
+        ctx.beginPath();ctx.arc(cx,cy,16,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#1a1a1a';
+        for(let a=0;a<Math.PI*2;a+=.015){const r=14+Math.sin(a*5)*.3;ctx.beginPath();ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,1.2,0,Math.PI*2);ctx.fill();}
+        for(let a=0;a<Math.PI*2;a+=.02){const r=7.5+Math.sin(a*3)*.2;ctx.beginPath();ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,.7,0,Math.PI*2);ctx.fill();}
+        ctx.beginPath();ctx.arc(cx,cy,2.5,0,Math.PI*2);ctx.fill();
+    })();
+    </script>
+
+    <script type="module">
+        import { ESPLoader, Transport } from 'https://unpkg.com/esptool-js@0.4.5/bundle.js';
+
+        if (!('serial' in navigator)) document.getElementById('browserWarning').classList.remove('hidden');
+
+        const dropZone=document.getElementById('dropZone'), dropZoneFile=document.getElementById('dropZoneFile'),
+              fileInput=document.getElementById('fileInput'), flashBtn=document.getElementById('flashCustomBtn'),
+              progressContainer=document.getElementById('customProgress'), progressFill=document.getElementById('customProgressFill'),
+              progressText=document.getElementById('customProgressText'), statusLine=document.getElementById('customStatus');
+
+        let customFirmware=null, customFileName=null;
+
+        dropZone.addEventListener('click',()=>fileInput.click());
+        dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+        dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+        fileInput.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+
+        async function handleFile(file){
+            if(!file.name.endsWith('.bin')){statusLine.textContent='Please select a .bin file';statusLine.className='status-line error';return;}
+            customFirmware=await file.arrayBuffer();customFileName=file.name;
+            dropZone.classList.add('has-file');
+            dropZoneFile.textContent=`${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+            dropZoneFile.classList.remove('hidden');flashBtn.disabled=false;statusLine.textContent='';
+        }
+
+        flashBtn.addEventListener('click',async()=>{
+            if(!customFirmware)return;
+            flashBtn.disabled=true;progressContainer.classList.add('active');
+            progressFill.style.width='0%';progressText.textContent='Requesting port...';statusLine.textContent='';
+            try{
+                const port=await navigator.serial.requestPort();
+                const transport=new Transport(port,true);
+                progressText.textContent='Connecting...';
+                const esploader=new ESPLoader({transport,baudrate:921600,romBaudrate:115200,
+                    terminal:{clean:()=>{},writeLine:d=>console.log(d),write:d=>console.log(d)}});
+                await esploader.main();
+                progressText.textContent='Connected! Erasing flash...';progressFill.style.width='10%';
+                await esploader.writeFlash({
+                    fileArray:[{data:new Uint8Array(customFirmware),address:0x0}],
+                    flashSize:'keep',flashMode:'keep',flashFreq:'keep',eraseAll:true,compress:true,
+                    reportProgress:(fi,written,total)=>{const pct=Math.round((written/total)*90)+10;progressFill.style.width=pct+'%';progressText.textContent=`Writing: ${pct}%`;}
+                });
+                progressFill.style.width='100%';progressText.textContent='✓ Complete! Unplug and reconnect.';
+                statusLine.textContent=`Successfully flashed ${customFileName}`;statusLine.className='status-line success';
+                await esploader.hardReset();await transport.disconnect();
+            }catch(error){
+                console.error(error);progressText.textContent='Flash failed';
+                statusLine.textContent=error.message||'Unknown error';statusLine.className='status-line error';
+            }
+            flashBtn.disabled=false;
+        });
+    </script>
+</body>
+</html>
