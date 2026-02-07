@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SumiBoy Flasher</title>
     <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
-    <script type="module" src="https://unpkg.com/esptool-js@0.4.5/bundle.js"></script>
     <style>
         :root {
             --white: #ffffff;
@@ -16,11 +15,7 @@
             --red: #c8352c;
             --red-light: #e8443a;
             --red-dark: #a02a22;
-            --blue: #3366cc;
             --desktop: #f5f3f0;
-            --success: #2d8a3e;
-            --error: #cc3333;
-            --warning: #b8860b;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -56,34 +51,17 @@
         .dot-red { background: #ff5f57; } .dot-yellow { background: #febc2e; } .dot-green { background: #28c840; }
         .title-bar h2 { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #444; }
         .title-bar .spacer { width: 54px; }
-        .window-body { padding: 16px; }
+        .window-body { padding: 20px; }
 
-        .panel { border: 1px solid var(--gray); border-radius: 6px; margin-bottom: 14px; overflow: hidden; }
-        .panel-header {
-            background: linear-gradient(180deg, #fafafa, #f0f0f0);
-            border-bottom: 1px solid var(--gray); padding: 8px 12px;
-            font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 8px;
-        }
-        .step-num {
-            background: var(--red); color: white; width: 20px; height: 20px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
-        }
-        .panel-body { padding: 14px; }
-        .instructions { font-size: 12px; margin-bottom: 12px; color: #555; }
-        .instructions ol { margin-left: 20px; }
-        .instructions li { margin-bottom: 4px; }
-        .version-box {
-            text-align: center; padding: 12px; background: var(--gray-light);
-            border: 1px solid var(--gray); border-radius: 4px; margin-bottom: 12px;
-        }
-        .version-box .ver { font-weight: 700; color: var(--red); font-size: 16px; }
-        .version-box .size { color: var(--gray-dark); font-size: 10px; margin-top: 2px; }
+        .steps { font-size: 12px; color: #555; margin-bottom: 16px; }
+        .steps ol { margin-left: 20px; }
+        .steps li { margin-bottom: 6px; }
 
-        esp-web-install-button { display: block; margin: 12px 0; }
+        esp-web-install-button { display: block; margin: 16px 0; }
         esp-web-install-button::part(button) {
             background: linear-gradient(180deg, var(--red-light), var(--red));
             border: 1px solid var(--red-dark); border-radius: 6px;
-            padding: 12px 20px; font-family: inherit; font-size: 13px; font-weight: 600;
+            padding: 14px 20px; font-family: inherit; font-size: 14px; font-weight: 600;
             color: white; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
             width: 100%; transition: all 0.15s;
         }
@@ -92,42 +70,14 @@
             box-shadow: 0 2px 8px rgba(200,53,44,0.3);
         }
 
-        .warning-box {
+        .note {
             background: #fef9e7; border: 1px solid #e6c84e; border-radius: 4px;
-            padding: 10px 12px; margin-bottom: 10px; font-size: 11px; line-height: 1.5;
+            padding: 10px 12px; font-size: 11px; line-height: 1.5; margin-top: 12px;
         }
-        .warning-box strong { color: var(--warning); }
+        .note strong { color: #b8860b; }
 
-        .drop-zone {
-            border: 2px dashed #ccc; border-radius: 8px; padding: 24px;
-            text-align: center; margin-bottom: 12px; transition: all 0.2s; cursor: pointer;
-        }
-        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--blue); background: #f0f4ff; }
-        .drop-zone.has-file { border-color: var(--success); background: #f0faf2; }
-        .drop-zone-text { font-size: 11px; color: var(--gray-dark); }
-        .drop-zone-file { font-size: 12px; color: var(--success); font-weight: 600; margin-top: 6px; }
-        .drop-zone input[type="file"] { display: none; }
-        .hidden { display: none !important; }
-
-        .btn {
-            background: linear-gradient(180deg, var(--white), #eee); border: 1px solid #bbb; border-radius: 6px;
-            padding: 10px 16px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%;
-        }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .btn-primary { background: linear-gradient(180deg, var(--red-light), var(--red)); color: white; border-color: var(--red-dark); }
-        .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ee4e44, var(--red-light)); }
-
-        .progress-container { margin-top: 12px; display: none; }
-        .progress-container.active { display: block; }
-        .progress { height: 18px; border: 1px solid #ccc; border-radius: 9px; background: var(--white); overflow: hidden; padding: 2px; margin-bottom: 6px; }
-        .progress-fill { height: 100%; border-radius: 7px; width: 0%; transition: width 0.3s; background: linear-gradient(90deg, var(--red), var(--red-light)); }
-        .progress-text { font-size: 10px; color: var(--gray-dark); text-align: center; }
-        .status-line { font-size: 11px; color: var(--gray-dark); margin-top: 8px; text-align: center; }
-        .status-line.success { color: var(--success); font-weight: 600; }
-        .status-line.error { color: var(--error); }
-
-        .browser-warning { background: #fff0f0; border: 1px solid var(--error); border-radius: 6px; padding: 12px; text-align: center; margin-bottom: 14px; }
-        .browser-warning h3 { color: var(--error); font-size: 12px; margin-bottom: 4px; }
+        .browser-warning { background: #fff0f0; border: 1px solid #cc3333; border-radius: 6px; padding: 12px; text-align: center; margin-bottom: 14px; display: none; }
+        .browser-warning h3 { color: #cc3333; font-size: 12px; margin-bottom: 4px; }
 
         .features-bar { max-width: 520px; margin: 0 auto 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .feat-card { background: var(--white); border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px 10px; text-align: center; }
@@ -139,8 +89,6 @@
         .ctrl-val { color: #666; }
 
         footer { max-width: 520px; margin: 0 auto; text-align: center; padding: 16px; font-size: 10px; color: var(--gray-dark); }
-        footer a { color: var(--blue); text-decoration: none; }
-        footer a:hover { text-decoration: underline; }
 
         @media (max-width: 540px) { body { padding: 12px; } .features-bar { grid-template-columns: 1fr; } }
     </style>
@@ -155,53 +103,29 @@
     <div class="window">
         <div class="title-bar">
             <div class="window-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
-            <h2>SumiBoy Flasher</h2>
+            <h2>Flash Firmware</h2>
             <div class="spacer"></div>
         </div>
         <div class="window-body">
-            <div id="browserWarning" class="browser-warning hidden">
-                <h3>⚠️ Unsupported Browser</h3>
+            <div id="browserWarning" class="browser-warning">
+                <h3>Unsupported Browser</h3>
                 <p>Web Serial requires <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong>.</p>
             </div>
 
-            <div class="panel">
-                <div class="panel-header"><span class="step-num">1</span> Flash SumiBoy</div>
-                <div class="panel-body">
-                    <div class="instructions"><ol>
-                        <li>Connect your SUMI via USB-C</li>
-                        <li>Click <strong>Install</strong> below</li>
-                        <li>Select the USB serial port when prompted</li>
-                    </ol></div>
-                    <div class="version-box">
-                        <div class="ver">SumiBoy v2.6.0</div>
-                        <div class="size">Pokémon Red · ESP32-C3 · 4.26" e-ink</div>
-                    </div>
-                    <esp-web-install-button manifest="manifest.json?v=2.6.0">
-                        <button slot="activate">⚡ Install SumiBoy v2.6.0</button>
-                        <span slot="unsupported">Your browser doesn't support Web Serial</span>
-                        <span slot="not-allowed">Not allowed to use Web Serial</span>
-                    </esp-web-install-button>
-                    <div class="warning-box">
-                        <strong>⚠️ Note:</strong> This replaces your current firmware entirely. To go back to stock SUMI, re-flash the original SUMI firmware.
-                    </div>
-                </div>
-            </div>
+            <div class="steps"><ol>
+                <li>Connect your SUMI via USB-C</li>
+                <li>Click <strong>Install</strong> below</li>
+                <li>Select the USB serial port when prompted</li>
+            </ol></div>
 
-            <div class="panel">
-                <div class="panel-header"><span class="step-num">2</span> Custom Firmware (Optional)</div>
-                <div class="panel-body">
-                    <div id="dropZone" class="drop-zone">
-                        <div class="drop-zone-text">Drag & drop a .bin file here<br>or click to browse</div>
-                        <div id="dropZoneFile" class="drop-zone-file hidden"></div>
-                        <input type="file" id="fileInput" accept=".bin">
-                    </div>
-                    <button id="flashCustomBtn" class="btn btn-primary" disabled>⚡ Flash Custom Firmware</button>
-                    <div id="customProgress" class="progress-container">
-                        <div class="progress"><div id="customProgressFill" class="progress-fill"></div></div>
-                        <div id="customProgressText" class="progress-text">Connecting...</div>
-                    </div>
-                    <div id="customStatus" class="status-line"></div>
-                </div>
+            <esp-web-install-button manifest="manifest.json">
+                <button slot="activate">Install SumiBoy</button>
+                <span slot="unsupported">Your browser doesn't support Web Serial</span>
+                <span slot="not-allowed">Not allowed to use Web Serial</span>
+            </esp-web-install-button>
+
+            <div class="note">
+                <strong>Note:</strong> This replaces your current firmware. To go back to stock, re-flash the original SUMI firmware.
             </div>
         </div>
     </div>
@@ -235,13 +159,14 @@
 
     <script>
     (function(){
+        if (!('serial' in navigator)) document.getElementById('browserWarning').style.display = 'block';
+
         const c = document.getElementById('pokeball');
         const ctx = c.getContext('2d');
         const W=240, H=240, cx=W/2, cy=H/2, R=90;
 
         function rng(seed){let s=seed;return function(){s=(s*16807)%2147483647;return(s-1)/2147483646;};}
 
-        // Splatter shading — top half
         const rs0=rng(77);
         let placed=0;
         while(placed<300){
@@ -258,7 +183,6 @@
             placed++;
         }
 
-        // Mist
         ctx.fillStyle='#1a1a1a';
         const rm=rng(100);
         for(let i=0;i<200;i++){
@@ -269,7 +193,6 @@
             ctx.beginPath();ctx.arc(cx+Math.cos(a)*d,py,sz,0,Math.PI*2);ctx.fill();
         }
 
-        // Brushstroke circle
         ctx.fillStyle='#1a1a1a';
         const rb=rng(201), startA=-.5, gap=.55, endA=startA+Math.PI*2-gap, maxT=7;
         for(let a=startA;a<endA;a+=.005){
@@ -282,7 +205,6 @@
             if(t>2&&rb()>.82){const ea=a+Math.PI/2+(rb()-.5)*.5,ed=t/2+rb()*1.5;ctx.beginPath();ctx.arc(bx+Math.cos(ea)*ed,by+Math.sin(ea)*ed,.2+rb()*.7,0,Math.PI*2);ctx.fill();}
         }
 
-        // Center slash
         const rs=rng(202);
         for(let x=cx-R*.9;x<cx+R*.9;x++){
             const p=(x-(cx-R*.9))/(R*1.8);let t=3.5;
@@ -291,7 +213,6 @@
             if(t>.3)ctx.fillRect(x,cy+yo-t/2,1,Math.max(1,Math.round(t)));
         }
 
-        // Center button
         ctx.fillStyle='#f5f3f0';
         ctx.beginPath();ctx.arc(cx,cy,16,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#1a1a1a';
@@ -299,60 +220,6 @@
         for(let a=0;a<Math.PI*2;a+=.02){const r=7.5+Math.sin(a*3)*.2;ctx.beginPath();ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,.7,0,Math.PI*2);ctx.fill();}
         ctx.beginPath();ctx.arc(cx,cy,2.5,0,Math.PI*2);ctx.fill();
     })();
-    </script>
-
-    <script type="module">
-        import { ESPLoader, Transport } from 'https://unpkg.com/esptool-js@0.4.5/bundle.js';
-
-        if (!('serial' in navigator)) document.getElementById('browserWarning').classList.remove('hidden');
-
-        const dropZone=document.getElementById('dropZone'), dropZoneFile=document.getElementById('dropZoneFile'),
-              fileInput=document.getElementById('fileInput'), flashBtn=document.getElementById('flashCustomBtn'),
-              progressContainer=document.getElementById('customProgress'), progressFill=document.getElementById('customProgressFill'),
-              progressText=document.getElementById('customProgressText'), statusLine=document.getElementById('customStatus');
-
-        let customFirmware=null, customFileName=null;
-
-        dropZone.addEventListener('click',()=>fileInput.click());
-        dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
-        dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
-        dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
-        fileInput.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
-
-        async function handleFile(file){
-            if(!file.name.endsWith('.bin')){statusLine.textContent='Please select a .bin file';statusLine.className='status-line error';return;}
-            customFirmware=await file.arrayBuffer();customFileName=file.name;
-            dropZone.classList.add('has-file');
-            dropZoneFile.textContent=`${file.name} (${(file.size/1024).toFixed(1)} KB)`;
-            dropZoneFile.classList.remove('hidden');flashBtn.disabled=false;statusLine.textContent='';
-        }
-
-        flashBtn.addEventListener('click',async()=>{
-            if(!customFirmware)return;
-            flashBtn.disabled=true;progressContainer.classList.add('active');
-            progressFill.style.width='0%';progressText.textContent='Requesting port...';statusLine.textContent='';
-            try{
-                const port=await navigator.serial.requestPort();
-                const transport=new Transport(port,true);
-                progressText.textContent='Connecting...';
-                const esploader=new ESPLoader({transport,baudrate:921600,romBaudrate:115200,
-                    terminal:{clean:()=>{},writeLine:d=>console.log(d),write:d=>console.log(d)}});
-                await esploader.main();
-                progressText.textContent='Connected! Erasing flash...';progressFill.style.width='10%';
-                await esploader.writeFlash({
-                    fileArray:[{data:new Uint8Array(customFirmware),address:0x0}],
-                    flashSize:'keep',flashMode:'keep',flashFreq:'keep',eraseAll:true,compress:true,
-                    reportProgress:(fi,written,total)=>{const pct=Math.round((written/total)*90)+10;progressFill.style.width=pct+'%';progressText.textContent=`Writing: ${pct}%`;}
-                });
-                progressFill.style.width='100%';progressText.textContent='✓ Complete! Unplug and reconnect.';
-                statusLine.textContent=`Successfully flashed ${customFileName}`;statusLine.className='status-line success';
-                await esploader.hardReset();await transport.disconnect();
-            }catch(error){
-                console.error(error);progressText.textContent='Flash failed';
-                statusLine.textContent=error.message||'Unknown error';statusLine.className='status-line error';
-            }
-            flashBtn.disabled=false;
-        });
     </script>
 </body>
 </html>
