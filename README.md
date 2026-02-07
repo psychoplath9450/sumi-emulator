@@ -47,7 +47,7 @@ Open in **Chrome** or **Edge**, plug in your SUMI via USB-C, click the button. T
 If you prefer not to use the web flasher, download the `.bin` from [Releases](../../releases) and flash with esptool:
 
 ```
-python -m esptool --chip esp32c3 write_flash 0x0 sumiboy-v2.5.0.bin
+python -m esptool --chip esp32c3 write_flash 0x0 SUMI-v2.6.0-full.bin
 ```
 
 ## Compatibility
